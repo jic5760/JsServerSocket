@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{0E82384B-1B83-43EA-A569-B9365A0838B9}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <NMakePreprocessorDefinitions>__VisualGDB_CFG_Debug;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakeIncludeSearchPath>$(LOCALAPPDATA)\VisualGDB\RemoteSourceCache\10.0.0.1\0000\include\c++\4.8.5;$(LOCALAPPDATA)\VisualGDB\RemoteSourceCache\10.0.0.1\0000\include\c++\4.8.5\x86_64-redhat-linux;$(LOCALAPPDATA)\VisualGDB\RemoteSourceCache\10.0.0.1\0000\include\c++\4.8.5\backward;$(LOCALAPPDATA)\VisualGDB\RemoteSourceCache\10.0.0.1\0001\include;$(LOCALAPPDATA)\VisualGDB\RemoteSourceCache\10.0.0.1\0002\include;$(LOCALAPPDATA)\VisualGDB\RemoteSourceCache\10.0.0.1\0000\include;$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>
+    <NMakeForcedIncludes>$(ProjectDir)\gcc_Debug.h;$(VISUALGDB_DIR)\gcc_compat.h;$(NMakeForcedIncludes)</NMakeForcedIncludes>
+    <NMakeBuildCommandLine>"$(VISUALGDB_DIR)\VisualGDB.exe" /build "$(ProjectPath)" "/solution:$(SolutionPath)" "/config:$(Configuration)" "/platform:$(Platform)"</NMakeBuildCommandLine>
+    <NMakeCleanCommandLine>"$(VISUALGDB_DIR)\VisualGDB.exe" /clean "$(ProjectPath)" "/solution:$(SolutionPath)" "/config:$(Configuration)" "/platform:$(Platform)"</NMakeCleanCommandLine>
+    <NMakeReBuildCommandLine>"$(VISUALGDB_DIR)\VisualGDB.exe" /rebuild "$(ProjectPath)" "/solution:$(SolutionPath)" "/config:$(Configuration)" "/platform:$(Platform)"</NMakeReBuildCommandLine>
+    <NMakeOutput>$(ProjectDir)JsServerSocket_TestProject-Debug.vgdbsettings</NMakeOutput>
+    <IncludePath />
+    <ReferencePath />
+    <LibraryPath />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <NMakePreprocessorDefinitions>__VisualGDB_CFG_Release;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakeIncludeSearchPath>$(LOCALAPPDATA)\VisualGDB\RemoteSourceCache\10.0.0.1\0000\include\c++\4.8.5;$(LOCALAPPDATA)\VisualGDB\RemoteSourceCache\10.0.0.1\0000\include\c++\4.8.5\x86_64-redhat-linux;$(LOCALAPPDATA)\VisualGDB\RemoteSourceCache\10.0.0.1\0000\include\c++\4.8.5\backward;$(LOCALAPPDATA)\VisualGDB\RemoteSourceCache\10.0.0.1\0001\include;$(LOCALAPPDATA)\VisualGDB\RemoteSourceCache\10.0.0.1\0002\include;$(LOCALAPPDATA)\VisualGDB\RemoteSourceCache\10.0.0.1\0000\include;$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>
+    <NMakeForcedIncludes>$(ProjectDir)\gcc_Release.h;$(VISUALGDB_DIR)\gcc_compat.h;$(NMakeForcedIncludes)</NMakeForcedIncludes>
+    <NMakeBuildCommandLine>"$(VISUALGDB_DIR)\VisualGDB.exe" /build "$(ProjectPath)" "/solution:$(SolutionPath)" "/config:$(Configuration)" "/platform:$(Platform)"</NMakeBuildCommandLine>
+    <NMakeCleanCommandLine>"$(VISUALGDB_DIR)\VisualGDB.exe" /clean "$(ProjectPath)" "/solution:$(SolutionPath)" "/config:$(Configuration)" "/platform:$(Platform)"</NMakeCleanCommandLine>
+    <NMakeReBuildCommandLine>"$(VISUALGDB_DIR)\VisualGDB.exe" /rebuild "$(ProjectPath)" "/solution:$(SolutionPath)" "/config:$(Configuration)" "/platform:$(Platform)"</NMakeReBuildCommandLine>
+    <NMakeOutput>$(ProjectDir)JsServerSocket_TestProject-Release.vgdbsettings</NMakeOutput>
+    <IncludePath />
+    <ReferencePath />
+    <LibraryPath />
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="JsCPPUtils\Common.cpp" />
+    <ClCompile Include="JsCPPUtils\JsThread.cpp" />
+    <ClCompile Include="JsCPPUtils\Lockable.cpp" />
+    <ClCompile Include="JsCPPUtils\LockableEx.cpp" />
+    <ClCompile Include="JsCPPUtils\Logger.cpp" />
+    <ClCompile Include="JsCPPUtils\MemoryBuffer.cpp" />
+    <ClCompile Include="JsCPPUtils\RandomWell512.cpp" />
+    <ClCompile Include="JsCPPUtils\StringBuffer.cpp" />
+    <ClCompile Include="JsServerSocket\ClientContext.cpp" />
+    <ClCompile Include="JsServerSocket\ServerContext.cpp" />
+    <ClCompile Include="JsServerSocket_TestProject.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="debug.mak" />
+    <None Include="JsServerSocket_TestProject-Debug.vgdbsettings" />
+    <None Include="JsServerSocket_TestProject-Release.vgdbsettings" />
+    <None Include="Makefile" />
+    <None Include="release.mak" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="JsCPPUtils\AtomicNum.h" />
+    <ClInclude Include="JsCPPUtils\Common.h" />
+    <ClInclude Include="JsCPPUtils\Endian.h" />
+    <ClInclude Include="JsCPPUtils\JsThread.h" />
+    <ClInclude Include="JsCPPUtils\Lockable.h" />
+    <ClInclude Include="JsCPPUtils\LockableEx.h" />
+    <ClInclude Include="JsCPPUtils\Logger.h" />
+    <ClInclude Include="JsCPPUtils\MemoryBuffer.h" />
+    <ClInclude Include="JsCPPUtils\Random.h" />
+    <ClInclude Include="JsCPPUtils\RandomWell512.h" />
+    <ClInclude Include="JsCPPUtils\SmartPointer.h" />
+    <ClInclude Include="JsCPPUtils\SmartPointerNTS.h" />
+    <ClInclude Include="JsCPPUtils\StringBuffer.h" />
+    <ClInclude Include="JsCPPUtils\TSSimpleMap.h" />
+    <ClInclude Include="JsServerSocket\ClientContext.h" />
+    <ClInclude Include="JsServerSocket\macros.h" />
+    <ClInclude Include="JsServerSocket\ServerContext.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

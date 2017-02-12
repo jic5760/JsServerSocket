@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source files">
+      <UniqueIdentifier>{21bd858a-05a8-4bae-95da-292c0e2eabc3}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header files">
+      <UniqueIdentifier>{c90d42cf-8aed-425f-9ca3-c8a61851e793}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource files">
+      <UniqueIdentifier>{6e8fe376-8d5c-448a-a8e8-69cf8a510bd8}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="Make files">
+      <UniqueIdentifier>{56ee138f-3142-43ad-87a3-05f377183a48}</UniqueIdentifier>
+      <Extensions>*.mak</Extensions>
+    </Filter>
+    <Filter Include="VisualGDB settings">
+      <UniqueIdentifier>{ae43962e-53c5-4f33-8428-683fb0ccc220}</UniqueIdentifier>
+      <Extensions>*.vgdbsettings</Extensions>
+    </Filter>
+    <Filter Include="JsCPPUtils">
+      <UniqueIdentifier>{5b840962-77e5-4a3f-93b5-73c57742329e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="JsServerSocket">
+      <UniqueIdentifier>{dae2730f-e782-42d5-a83b-35fcab27bf1f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="JsServerSocket_TestProject.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="JsCPPUtils\Common.cpp">
+      <Filter>JsCPPUtils</Filter>
+    </ClCompile>
+    <ClCompile Include="JsCPPUtils\JsThread.cpp">
+      <Filter>JsCPPUtils</Filter>
+    </ClCompile>
+    <ClCompile Include="JsCPPUtils\Lockable.cpp">
+      <Filter>JsCPPUtils</Filter>
+    </ClCompile>
+    <ClCompile Include="JsCPPUtils\LockableEx.cpp">
+      <Filter>JsCPPUtils</Filter>
+    </ClCompile>
+    <ClCompile Include="JsCPPUtils\Logger.cpp">
+      <Filter>JsCPPUtils</Filter>
+    </ClCompile>
+    <ClCompile Include="JsCPPUtils\MemoryBuffer.cpp">
+      <Filter>JsCPPUtils</Filter>
+    </ClCompile>
+    <ClCompile Include="JsCPPUtils\RandomWell512.cpp">
+      <Filter>JsCPPUtils</Filter>
+    </ClCompile>
+    <ClCompile Include="JsCPPUtils\StringBuffer.cpp">
+      <Filter>JsCPPUtils</Filter>
+    </ClCompile>
+    <ClCompile Include="JsServerSocket\ServerContext.cpp">
+      <Filter>JsServerSocket</Filter>
+    </ClCompile>
+    <ClCompile Include="JsServerSocket\ClientContext.cpp">
+      <Filter>JsServerSocket</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Makefile" />
+    <None Include="debug.mak">
+      <Filter>Make files</Filter>
+    </None>
+    <None Include="JsServerSocket_TestProject-Debug.vgdbsettings">
+      <Filter>VisualGDB settings</Filter>
+    </None>
+    <None Include="release.mak">
+      <Filter>Make files</Filter>
+    </None>
+    <None Include="JsServerSocket_TestProject-Release.vgdbsettings">
+      <Filter>VisualGDB settings</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="JsCPPUtils\Common.h">
+      <Filter>JsCPPUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="JsCPPUtils\Endian.h">
+      <Filter>JsCPPUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="JsCPPUtils\JsThread.h">
+      <Filter>JsCPPUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="JsCPPUtils\Lockable.h">
+      <Filter>JsCPPUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="JsCPPUtils\LockableEx.h">
+      <Filter>JsCPPUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="JsCPPUtils\Logger.h">
+      <Filter>JsCPPUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="JsCPPUtils\MemoryBuffer.h">
+      <Filter>JsCPPUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="JsCPPUtils\Random.h">
+      <Filter>JsCPPUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="JsCPPUtils\RandomWell512.h">
+      <Filter>JsCPPUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="JsCPPUtils\SmartPointer.h">
+      <Filter>JsCPPUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="JsCPPUtils\SmartPointerNTS.h">
+      <Filter>JsCPPUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="JsCPPUtils\StringBuffer.h">
+      <Filter>JsCPPUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="JsCPPUtils\TSSimpleMap.h">
+      <Filter>JsCPPUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="JsCPPUtils\AtomicNum.h">
+      <Filter>JsCPPUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="JsServerSocket\ServerContext.h">
+      <Filter>JsServerSocket</Filter>
+    </ClInclude>
+    <ClInclude Include="JsServerSocket\ClientContext.h">
+      <Filter>JsServerSocket</Filter>
+    </ClInclude>
+    <ClInclude Include="JsServerSocket\macros.h">
+      <Filter>JsServerSocket</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
