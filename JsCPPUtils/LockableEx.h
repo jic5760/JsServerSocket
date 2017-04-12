@@ -16,7 +16,7 @@
 #define __JSCPPUTILS_LOCKABLEEX_H__
 
 #include "Lockable.h"
-#include "TSSimpleMap.h"
+#include "HashMap.h"
 
 namespace JsCPPUtils
 {
@@ -25,16 +25,16 @@ namespace JsCPPUtils
 	private:
 		Lockable m_lock;
 #if defined(JSCUTILS_OS_WINDOWS)
-		TSSimpleMap<DWORD, int> m_tinfo;
+		HashMap<DWORD, int, 31, 16, 4> m_tinfo;
 #elif defined(JSCUTILS_OS_LINUX)
-		TSSimpleMap<pthread_t, int> m_tinfo;
+		HashMap<pthread_t, int, 31, 16, 4> m_tinfo;
 #endif
 
 	public:
 		LockableEx();
 		~LockableEx();
 		int lock();
-		int unlock();
+		int unlock(bool earseinmap = false);
 
 	};
 }

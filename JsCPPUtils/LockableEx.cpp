@@ -38,7 +38,7 @@ namespace JsCPPUtils
 		return nrst;
 	}
 
-	int LockableEx::unlock()
+	int LockableEx::unlock(bool earseinmap)
 	{
 		int nrst = 1;
 		DWORD dwTid = GetCurrentThreadId();
@@ -46,6 +46,8 @@ namespace JsCPPUtils
 		if (--_locked == 0)
 		{
 			nrst = m_lock.unlock();
+			if (earseinmap)
+				m_tinfo.erase(curthread);
 		}
 		m_tinfo.set(dwTid, _locked);
 		return nrst;
@@ -55,25 +57,25 @@ namespace JsCPPUtils
 	{
 		int nrst;
 		pthread_t curthread = pthread_self();
-		int _locked = m_tinfo.get(curthread);
+		int &_locked = m_tinfo[curthread];
 		if (_locked++ == 0)
 		{
 			nrst = m_lock.lock();
 		}
-		m_tinfo.set(curthread, _locked);
 		return nrst;
 	}
 
-	int LockableEx::unlock()
+	int LockableEx::unlock(bool earseinmap)
 	{
 		int nrst;
 		pthread_t curthread = pthread_self();
-		int _locked = m_tinfo.get(curthread);
+		int& _locked = m_tinfo[curthread];
 		if (--_locked == 0)
 		{
 			nrst = m_lock.unlock();
+			if (earseinmap)
+				m_tinfo.erase(curthread);
 		}
-		m_tinfo.set(curthread, _locked);
 		return nrst;
 	}
 #endif

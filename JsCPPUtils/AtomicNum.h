@@ -19,7 +19,7 @@
 namespace JsCPPUtils
 {
 
-	template <typename T>
+	template <typename T, bool _usebymanythread = false>
 	class AtomicNum : public LockableEx
 	{
 	private:
@@ -46,14 +46,14 @@ namespace JsCPPUtils
 		{
 			LockableEx::lock();
 			m_value = y;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 		}
 		
 		void operator=(T y)
 		{
 			LockableEx::lock();
 			m_value = y;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 		}
 
 		operator T()
@@ -61,7 +61,7 @@ namespace JsCPPUtils
 			T value;
 			LockableEx::lock();
 			value = m_value;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 			return value;
 		}
 
@@ -70,7 +70,7 @@ namespace JsCPPUtils
 			T value;
 			LockableEx::lock();
 			value = m_value;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 			return value;
 		}
 
@@ -80,7 +80,7 @@ namespace JsCPPUtils
 			LockableEx::lock();
 			old = m_value;
 			m_value = value;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 			return old;
 		}
 
@@ -91,7 +91,7 @@ namespace JsCPPUtils
 			old = m_value;
 			if(old == ifvalue)
 				m_value = value;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 			return old;
 		}
 
@@ -102,12 +102,11 @@ namespace JsCPPUtils
 			old = m_value;
 			if(old != ifnvalue)
 				m_value = value;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 			return old;
 		}
-
 		
-
+		/*
 #if defined(_MSC_VER)
 		AtomicNum& operator--()
 		{
@@ -115,7 +114,7 @@ namespace JsCPPUtils
 			LockableEx::lock();
 			m_value -= 1;
 			value = m_value;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 			return *this;
 		}
 
@@ -125,7 +124,7 @@ namespace JsCPPUtils
 			LockableEx::lock();
 			value = m_value;
 			m_value -= 1;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 			return value;
 		}
 
@@ -135,7 +134,7 @@ namespace JsCPPUtils
 			LockableEx::lock();
 			m_value += 1;
 			value = m_value;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 			return *this;
 		}
 
@@ -145,80 +144,80 @@ namespace JsCPPUtils
 			LockableEx::lock();
 			value = m_value;
 			m_value += 1;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 			return value;
 		}
-
 #endif
+		*/
 		
 		void operator+=(T y)
 		{
 			LockableEx::lock();
 			m_value += y;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 		}
 
 		void operator-=(T y)
 		{
 			LockableEx::lock();
 			m_value -= y;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 		}
 
 		void operator*=(T y)
 		{
 			LockableEx::lock();
 			m_value *= y;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 		}
 
 		void operator/=(T y)
 		{
 			LockableEx::lock();
 			m_value /= y;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 		}
 
 		void operator%=(T y)
 		{
 			LockableEx::lock();
 			m_value %= y;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 		}
 
 		void operator<<=(T y)
 		{
 			LockableEx::lock();
 			m_value <<= y;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 		}
 
 		void operator>>=(T y)
 		{
 			LockableEx::lock();
 			m_value >>= y;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 		}
 
 		void operator^=(T y)
 		{
 			LockableEx::lock();
 			m_value ^= y;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 		}
 
 		void operator&=(T y)
 		{
 			LockableEx::lock();
 			m_value &= y;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 		}
 
 		void operator|=(T y)
 		{
 			LockableEx::lock();
 			m_value |= y;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 		}
 
 		bool operator==(T y)
@@ -226,7 +225,7 @@ namespace JsCPPUtils
 			bool retval;
 			LockableEx::lock();
 			retval = m_value == y;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 			return retval;
 		}
 
@@ -235,7 +234,7 @@ namespace JsCPPUtils
 			bool retval;
 			LockableEx::lock();
 			retval = m_value != y;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 			return retval;
 		}
 
@@ -244,7 +243,7 @@ namespace JsCPPUtils
 			bool retval;
 			LockableEx::lock();
 			retval = m_value > y;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 			return retval;
 		}
 
@@ -253,7 +252,7 @@ namespace JsCPPUtils
 			bool retval;
 			LockableEx::lock();
 			retval = m_value < y;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 			return retval;
 		}
 
@@ -262,7 +261,7 @@ namespace JsCPPUtils
 			bool retval;
 			LockableEx::lock();
 			retval = m_value >= y;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 			return retval;
 		}
 
@@ -271,7 +270,7 @@ namespace JsCPPUtils
 			bool retval;
 			LockableEx::lock();
 			retval = m_value <= y;
-			LockableEx::unlock();
+			LockableEx::unlock(_usebymanythread);
 			return retval;
 		}
 	};

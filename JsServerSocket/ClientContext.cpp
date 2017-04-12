@@ -14,6 +14,7 @@
 
 #include <errno.h>
 #include <unistd.h>
+#include <poll.h>
 
 #include "ClientContext.h"
 #include "ServerContext.h"
@@ -33,13 +34,14 @@ namespace JsServerSocket {
 		, m_ssl(NULL)
 #endif
 	{
+		m_freed = false;
 		::memcpy(&m_addr, client_paddr, sizeof(struct sockaddr_in));
 		m_last_recvedtime = JsCPPUtils::Common::getTickCount();
 	}
 
-
 	ClientContext::~ClientContext()
 	{
+		m_freed = true;
 	}
 
 	int ClientContext::getIndex()
@@ -97,21 +99,28 @@ namespace JsServerSocket {
 	{
 		int nrst;
 		int processedLen = 0;
-		fd_set readfds;
+		struct pollfd tmppollfd;
 		do {
-			FD_ZERO(&readfds);
-			FD_SET(m_sockfd, &readfds);
-			nrst = ::select(m_sockfd+1, &readfds, NULL, NULL, ptvtimeout);
-			if(nrst == SOCKET_ERROR)
+			memset(&tmppollfd, 0, sizeof(tmppollfd));
+			tmppollfd.fd = m_sockfd;
+			tmppollfd.events = POLLIN;
+			nrst = ::poll(&tmppollfd, 1, (ptvtimeout == NULL) ? -1 : (ptvtimeout->tv_sec * 1000 + ptvtimeout->tv_usec / 1000));
+			if (nrst < 0)
 			{
 				nrst = -errno;
-			}else if(FD_ISSET(m_sockfd, &readfds))
+			}
+			else if (nrst > 0)
 			{
 				nrst = ::recv(m_sockfd, &pbuf[processedLen], size - processedLen, flags);
-				if(nrst < 0)
+				if (nrst < 0)
 					nrst = -errno;
-				else if(nrst > 0)
+				else if (nrst > 0)
 					processedLen += nrst;
+			}
+			else
+			{
+				// timeout
+				break;
 			}
 		}while(processedLen < size && ((nrst > 0) || ((nrst < 0) && (errno == EINTR))));
 		if(nrst <= 0)

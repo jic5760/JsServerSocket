@@ -42,12 +42,12 @@ namespace JsServerSocket
 	class ClientContext;
 	class ServerContext {
 	public:	
-		typedef int (*StartWorkerPostHandler_t)(ServerContext *pserverctx, int threadidx, void **out_pthreaduserctx);
-		typedef void (*StopWorkerHandler_t)(ServerContext *pserverctx, int threadidx, void *pthreaduserctx);
+		typedef int(*StartWorkerPostHandler_t)(ServerContext *pserverctx, int threadidx, void **out_pthreaduserctx);
+		typedef void(*StopWorkerHandler_t)(ServerContext *pserverctx, int threadidx, void *pthreaduserctx);
 
 		typedef int(*Client_AcceptHandler_t)(ServerContext *pServerCtx, void *pthreaduserctx, int client_sock, struct sockaddr_in *client_paddr);
 		typedef int(*Client_RecvHandler_t)(ServerContext *pServerCtx, void *pthreaduserctx, ClientContext *pClientCtx, int recv_len, char *recv_pbuf);
-		typedef void(*Client_DelHandler_t)(ServerContext *pServerCtx, void *pthreaduserctx, ClientContext *pClientCtx);
+		typedef void(*Client_DelHandler_t)(ServerContext *pServerCtx, ClientContext *pClientCtx);
 
 	private:
 		class WorkerThreadInternalContext {
@@ -60,12 +60,12 @@ namespace JsServerSocket
 			
 			char *precvbuf;
 
-			WorkerThreadInternalContext(ServerContext *_pServerCtx, int _threadidx, void *_pthreaduserctx) : 
-				pServerCtx(_pServerCtx),
-				inited_userhandler(false),
-				threadidx(_threadidx),
-				pthreaduserctx(_pthreaduserctx),
-				precvbuf(NULL)
+			WorkerThreadInternalContext(ServerContext *_pServerCtx, int _threadidx, void *_pthreaduserctx)
+				: pServerCtx(_pServerCtx)
+				, inited_userhandler(false)
+				, threadidx(_threadidx)
+				, pthreaduserctx(_pthreaduserctx)
+				, precvbuf(NULL)
 			{
 			}
 		};
@@ -115,23 +115,29 @@ namespace JsServerSocket
 		ServerContext(JsCPPUtils::Logger *logger);
 		~ServerContext();
 		int init(
-			int sock_domain, int sock_type, int sock_proto,
-		    bool bUseSSL,
+			int sock_domain,
+			int sock_type,
+			int sock_proto,
+			bool bUseSSL,
 #ifdef USE_OPENSSL 
 			const SSL_METHOD *ssl_method,
-#else			void *ssl_method,
+#else
+			void *ssl_method,
 #endif
-			int numOfMaxClients, long recvdatabufsize,
+			int numOfMaxClients,
+			long recvdatabufsize,
 			StartWorkerPostHandler_t startworkerposthandler,
-			StopWorkerHandler_t stopworkerhandler, Client_AcceptHandler_t accepthandler,
-			Client_RecvHandler_t recvhandler, Client_DelHandler_t delhandler
-			);
+			StopWorkerHandler_t stopworkerhandler,
+			Client_AcceptHandler_t accepthandler,
+			Client_RecvHandler_t recvhandler,
+			Client_DelHandler_t delhandler);
 		int close();
 		int listen(const struct sockaddr *psockaddr, int sockaddrlen, int sizeOfListenQueue);
-		int sslLoadCertificates(char* szCertFile, char* szKeyFile);
+		int sslLoadCertificates(const char* szCertFile, const char* szKeyFile);
 		int startWorkers(int numOfthreads);
 
 		int clientAdd(int clientsock, struct sockaddr_in *client_paddr, JsCPPUtils::SmartPointer< ClientContext > *pout_spclientctx, void *userptr);
+		int clientDel(JsCPPUtils::SmartPointer<ClientContext> spClientCtx);
 		int clientDel(ClientContext *pClientCtx);
 		int clientDel(int clientidx);
 		int clientDel(std::map<int, JsCPPUtils::SmartPointer<ClientContext> >::iterator iter);

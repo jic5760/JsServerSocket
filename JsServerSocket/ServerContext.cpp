@@ -170,7 +170,7 @@ namespace JsServerSocket
 		return 1;
 	}
 
-	int ServerContext::sslLoadCertificates(char* szCertFile, char* szKeyFile)
+	int ServerContext::sslLoadCertificates(const char* szCertFile, const char* szKeyFile)
 	{
 #ifdef USE_OPENSSL
 	    /* set the local certificate from CertFile */
@@ -424,8 +424,10 @@ namespace JsServerSocket
 						{
 							if (recvlen <= 0)
 							{
-								if(pServerCtx->m_plogger != NULL)
-									pServerCtx->m_plogger->printf(JsCPPUtils::Logger::LOGTYPE_INFO, "[server_workerthreadproc] Client[%d] recvlen=0", pclientctx->m_index);
+								if (recvlen < 0)
+									if(pServerCtx->m_plogger != NULL)
+										pServerCtx->m_plogger->printf(JsCPPUtils::Logger::LOGTYPE_INFO, "[server_workerthreadproc] Client[%d] recvlen=%d, eno=%d", pclientctx->m_index, recvlen, neno);
+								procrst = recvlen;
 							}
 							else
 							{
@@ -456,8 +458,9 @@ namespace JsServerSocket
 							if (procrst <= 0)
 							{
 								pServerCtx->clientDel(pclientctx);
+							}else{
+								pclientctx->unlock();
 							}
-							pclientctx->unlock();
 						}
 					}
 				}
@@ -503,7 +506,6 @@ namespace JsServerSocket
 		int i;
 
 		int clientidx = -1;
-		ClientContext *pclientctx = NULL;
 		JsCPPUtils::SmartPointer< ClientContext > spclientctx;
 
 		int nval;
@@ -513,14 +515,14 @@ namespace JsServerSocket
 		timeout_tv.tv_sec = 10;
 		timeout_tv.tv_usec = 0;
 
-		if ((nrst = setsockopt (clientsock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout_tv, sizeof(timeout_tv))) < 0)
+		if(unlikely((nrst = setsockopt (clientsock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout_tv, sizeof(timeout_tv))) < 0))
 		{
 			neno = -errno;
 			if(m_plogger != NULL)
 				m_plogger->printf(JsCPPUtils::Logger::LOGTYPE_ERR, "[server_workerthreadproc] client socket setsockopt(SO_RCVTIMEO) failed: %d", neno);
 		}
 
-		if ((nrst = setsockopt(clientsock, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout_tv, sizeof(timeout_tv))) < 0)
+		if(unlikely((nrst = setsockopt(clientsock, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout_tv, sizeof(timeout_tv))) < 0))
 		{
 			neno = -errno;
 			if(m_plogger != NULL)
@@ -528,7 +530,7 @@ namespace JsServerSocket
 		}
 
 		nval = 1;
-		if ((nrst = setsockopt(clientsock, SOL_SOCKET, SO_KEEPALIVE, (char *)&nval, sizeof(nval))) < 0)
+		if(unlikely((nrst = setsockopt(clientsock, SOL_SOCKET, SO_KEEPALIVE, (char *)&nval, sizeof(nval))) < 0))
 		{
 			neno = -errno;
 			if(m_plogger != NULL)
@@ -536,7 +538,7 @@ namespace JsServerSocket
 		}
 
 		nval = 600;
-		if ((nrst = setsockopt(clientsock, SOL_TCP, TCP_KEEPIDLE, (char *)&nval, sizeof(nval))) < 0)
+		if(unlikely((nrst = setsockopt(clientsock, SOL_TCP, TCP_KEEPIDLE, (char *)&nval, sizeof(nval))) < 0))
 		{
 			neno = -errno;
 			if(m_plogger != NULL)
@@ -544,7 +546,7 @@ namespace JsServerSocket
 		}
 
 		nval = 6;
-		if ((nrst = setsockopt(clientsock, SOL_TCP, TCP_KEEPCNT, (char *)&nval, sizeof(nval))) < 0)
+		if(unlikely((nrst = setsockopt(clientsock, SOL_TCP, TCP_KEEPCNT, (char *)&nval, sizeof(nval))) < 0))
 		{
 			neno = -errno;
 			if(m_plogger != NULL)
@@ -552,7 +554,7 @@ namespace JsServerSocket
 		}
 
 		nval = 5;
-		if ((nrst = setsockopt(clientsock, SOL_TCP, TCP_KEEPINTVL, (char *)&nval, sizeof(nval))) < 0)
+		if(unlikely((nrst = setsockopt(clientsock, SOL_TCP, TCP_KEEPINTVL, (char *)&nval, sizeof(nval))) < 0))
 		{
 			neno = -errno;
 			if(m_plogger != NULL)
@@ -585,23 +587,21 @@ namespace JsServerSocket
 				}
 			}while(clientidx == -1 && failcnt < 128);
 			m_random_lock.unlock();
-			if(failcnt < 128)
+			if(unlikely(failcnt < 128))
 			{
-				pclientctx = new ClientContext(this, clientidx, clientsock, client_paddr, userptr);
-				if(likely(pclientctx != NULL))
+				try
 				{
-					m_clients[clientidx] = pclientctx;
-				}
-				else
-				{
+					spclientctx = new ClientContext(this, clientidx, clientsock, client_paddr, userptr);
+					m_clients[clientidx] = spclientctx;
+				}catch (std::bad_alloc& ex){
 					neno = -errno;
 					retval = neno;
-					if(m_plogger != NULL)
+					if (m_plogger != NULL)
 						m_plogger->printf(JsCPPUtils::Logger::LOGTYPE_ERR, "[workerthreadproc] Memory allocation failed(new ClientContext): %d", neno);
 				}
 			}
 			m_clients_lock.unlock();
-			if(failcnt >= 128 || pclientctx == NULL)
+			if (failcnt >= 128 || spclientctx == NULL)
 			{
 				break;
 			}
@@ -609,8 +609,8 @@ namespace JsServerSocket
 #ifdef USE_OPENSSL
 			if (m_bUseSSL)
 			{
-				pclientctx->m_ssl = SSL_new(m_sslCtx);
-				if (unlikely(pclientctx->m_ssl == NULL))
+				spclientctx->m_ssl = SSL_new(m_sslCtx);
+				if (unlikely(spclientctx->m_ssl == NULL))
 				{
 					ERR_print_errors_fp(stderr);
 					retval = -1;
@@ -618,8 +618,8 @@ namespace JsServerSocket
 				}
 				else
 				{
-					SSL_set_fd(pclientctx->m_ssl, clientsock);
-					if ((nrst = SSL_accept(pclientctx->m_ssl)) <= 0)
+					SSL_set_fd(spclientctx->m_ssl, clientsock);
+					if ((nrst = SSL_accept(spclientctx->m_ssl)) <= 0)
 					{
 						ERR_print_errors_fp(stderr);
 						retval = -1000;
@@ -631,9 +631,9 @@ namespace JsServerSocket
 
 			memset(&tmpepevent, 0, sizeof(tmpepevent));
 			tmpepevent.events = EPOLLIN | EPOLLONESHOT;
-			tmpepevent.data.ptr = pclientctx;
+			tmpepevent.data.ptr = spclientctx.getPtr();
 
-			if ((nrst = epoll_ctl(m_epoll_fd, EPOLL_CTL_ADD, clientsock, &tmpepevent)) < 0)
+			if(unlikely((nrst = epoll_ctl(m_epoll_fd, EPOLL_CTL_ADD, clientsock, &tmpepevent)) < 0))
 			{
 				// Error
 				neno = -errno;
@@ -663,8 +663,26 @@ namespace JsServerSocket
 		else
 		{
 			if (pout_spclientctx)
-				*pout_spclientctx = m_clients[clientidx];
+				*pout_spclientctx = spclientctx;
 		}
+
+		return retval;
+	}
+
+	int ServerContext::clientDel(JsCPPUtils::SmartPointer<ClientContext> spClientCtx)
+	{
+		int retval = 0;
+		
+		m_clients_lock.lock();
+		for (std::map<int, JsCPPUtils::SmartPointer<ClientContext> >::iterator iter = m_clients.begin(); iter != m_clients.end(); iter++)
+		{
+			if (iter->second == spClientCtx)
+			{
+				retval = clientDel(iter);
+				break;
+			}
+		}
+		m_clients_lock.unlock();
 
 		return retval;
 	}
@@ -674,10 +692,13 @@ namespace JsServerSocket
 		int retval = 0;
 		
 		m_clients_lock.lock();
-		for(std::map<int, JsCPPUtils::SmartPointer<ClientContext> >::iterator iter = m_clients.begin(); iter != m_clients.end(); iter++)
+		for (std::map<int, JsCPPUtils::SmartPointer<ClientContext> >::iterator iter = m_clients.begin(); iter != m_clients.end(); iter++)
 		{
-			retval = clientDel(iter);
-			break;
+			if (iter->second == pClientCtx)
+			{
+				retval = clientDel(iter);
+				break;
+			}
 		}
 		m_clients_lock.unlock();
 
@@ -708,21 +729,27 @@ namespace JsServerSocket
 		int nrst;
 		int neno;
 
-		ClientContext *pclientctx = iter->second.getPtr();
+		JsCPPUtils::SmartPointer<ClientContext> spclientctx = iter->second;
 		struct epoll_event tmpepevent;
+		
+		if (m_delhandler)
+		{
+			m_delhandler(this, spclientctx.getPtr());
+		}
 		
 		memset(&tmpepevent, 0, sizeof(tmpepevent));
 
 		tmpepevent.events = EPOLLIN;
-		tmpepevent.data.ptr = pclientctx;
-		if ((nrst = epoll_ctl(m_epoll_fd, EPOLL_CTL_DEL, pclientctx->m_sockfd, &tmpepevent)) < 0)
+		tmpepevent.data.ptr = spclientctx.getPtr();
+		if ((nrst = epoll_ctl(m_epoll_fd, EPOLL_CTL_DEL, spclientctx->m_sockfd, &tmpepevent)) < 0)
 		{
 			neno = -errno;
 			retval = neno;
-			if(m_plogger != NULL)
+			if (m_plogger != NULL)
 				m_plogger->printf(JsCPPUtils::Logger::LOGTYPE_ERR, "[clientDel] server socket epoll_ctl_del failed: %d", neno);
 		}
-		pclientctx->close();
+		
+		spclientctx->close();
 
 		m_clients.erase(iter);
 

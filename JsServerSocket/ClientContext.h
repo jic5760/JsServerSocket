@@ -38,6 +38,8 @@ namespace JsServerSocket
 
 	public:
 		bool m_isUsable;
+		
+		bool m_freed;
 
 		ServerContext *m_pServerCtx;
 		int m_index;
