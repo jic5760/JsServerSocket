@@ -49,6 +49,7 @@ namespace JsServerSocket
 
 		int64_t m_last_recvedtime;
 		
+		int m_sslstate;
 #ifdef USE_OPENSSL
 		SSL *m_ssl;
 #endif
@@ -66,6 +67,13 @@ namespace JsServerSocket
 		int recvfixedsize(char *pbuf, int size, JSCUTILS_TYPE_FLAG flags, struct timeval *ptvtimeout);
 		int sendfixedsize(char *pbuf, int size, JSCUTILS_TYPE_FLAG flags);
 		int close();
+		
+		void setUserPtr(void *userptr);
+		void *getUserPtr();
+		
+#ifdef USE_OPENSSL
+		SSL *getSSL();
+#endif
 	};
 }
 

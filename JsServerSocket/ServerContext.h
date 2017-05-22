@@ -7,6 +7,7 @@
  *            This software may be modified and distributed under the terms
  *            of the MIT license.  See the LICENSE file for details.
  */
+#define USE_OPENSSL
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1200)
 #pragma once
@@ -96,8 +97,7 @@ namespace JsServerSocket
 		JsCPPUtils::Lockable      m_random_lock;
 		JsCPPUtils::RandomWell512 m_random;
 
-		std::map< int, JsCPPUtils::SmartPointer<ClientContext> > m_clients;
-		JsCPPUtils::Lockable                                     m_clients_lock;
+		void *m_userptr;
 
 		void *userptr;
 
@@ -112,7 +112,10 @@ namespace JsServerSocket
 		static int workerThreadProc(JsCPPUtils::JsThread::ThreadContext *pThreadCtx, int threadindex, void *threadparam);
 
 	public:
-		ServerContext(JsCPPUtils::Logger *logger);
+		std::map< int, JsCPPUtils::SmartPointer<ClientContext> > m_clients;
+		JsCPPUtils::Lockable                                     m_clients_lock;
+		
+		ServerContext(void *userptr = NULL, JsCPPUtils::Logger *logger = NULL);
 		~ServerContext();
 		int init(
 			int sock_domain,
@@ -143,9 +146,16 @@ namespace JsServerSocket
 		int clientDel(std::map<int, JsCPPUtils::SmartPointer<ClientContext> >::iterator iter);
 
 		JsCPPUtils::Logger *getLogger();
+		
+		void setUserPtr(void *userptr);
+		void *getUserPtr();
 
 		int getConnections();
 		bool getUseSSL();
+		
+#ifdef USE_OPENSSL
+		SSL_CTX *getSSLCtx();
+#endif
 	};
 
 	/*

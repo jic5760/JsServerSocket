@@ -29,7 +29,8 @@ namespace JsServerSocket {
 		m_index(index),
 		m_sockfd(clientsock),
 		m_userptr(userptr),
-		m_isUsable(true)
+		m_isUsable(true),
+		m_sslstate(0)
 #ifdef USE_OPENSSL
 		, m_ssl(NULL)
 #endif
@@ -89,18 +90,67 @@ namespace JsServerSocket {
 	int ClientContext::send(char *pbuf, int size, JSCUTILS_TYPE_FLAG flags)
 	{
 		int nrst;
-		do {
-			nrst = ::send(m_sockfd, pbuf, size, flags);
-		}while(nrst < 0 && errno == EINTR);
+		int neno = 0;
+		
+		if (m_sslstate == 1)
+			return 0;
+		
+		do
+		{
+			if (m_sslstate == 2)
+			{
+				int sslerr = 0;
+#ifdef USE_OPENSSL
+				nrst = SSL_write(m_ssl, pbuf, size);
+				if (nrst < 0)
+				{
+					neno = errno;
+					sslerr = SSL_get_error(m_ssl, nrst);
+					switch (sslerr)
+					{
+					case SSL_ERROR_WANT_READ:
+					case SSL_ERROR_WANT_WRITE:
+						neno = EAGAIN;
+						break;
+					}
+				}
+#else
+				nrst = 0;
+#endif
+			} else {
+				nrst = ::send(m_sockfd, pbuf, size, flags);
+			}
+		} while ((nrst < 0) && (neno == EINTR));
+		errno = neno;
 		return nrst;
 	}
 
 	int ClientContext::recvfixedsize(char *pbuf, int size, JSCUTILS_TYPE_FLAG flags, struct timeval *ptvtimeout)
 	{
 		int nrst;
+		int neno = 0;
 		int processedLen = 0;
 		struct pollfd tmppollfd;
 		do {
+			int procpass = 0;
+			int readableBytes = 0;
+			
+			//SSL_pending
+			if (m_sslstate == 2)
+			{
+				readableBytes = SSL_pending(m_ssl);
+				if (readableBytes > 0)
+				{
+					nrst = ::SSL_read(m_ssl, &pbuf[processedLen], readableBytes);
+					if (nrst > 0)
+					{
+						processedLen += nrst;
+						if (processedLen >= size)
+							break;
+					}
+				}
+			}
+			
 			memset(&tmppollfd, 0, sizeof(tmppollfd));
 			tmppollfd.fd = m_sockfd;
 			tmppollfd.events = POLLIN;
@@ -111,18 +161,62 @@ namespace JsServerSocket {
 			}
 			else if (nrst > 0)
 			{
-				nrst = ::recv(m_sockfd, &pbuf[processedLen], size - processedLen, flags);
-				if (nrst < 0)
-					nrst = -errno;
-				else if (nrst > 0)
-					processedLen += nrst;
+				if (m_sslstate == 2)
+				{
+					int sslerr;
+					nrst = ::SSL_read(m_ssl, &pbuf[processedLen], size - processedLen);
+					if (nrst < 0)
+					{
+						neno = errno;
+						sslerr = SSL_get_error(m_ssl, nrst);
+						switch (sslerr)
+						{
+						case SSL_ERROR_SSL:
+							ERR_print_errors_fp(stderr);
+							procpass = -1;
+							break;
+						case SSL_ERROR_WANT_READ:
+						case SSL_ERROR_WANT_WRITE:
+							neno = EAGAIN;
+							procpass = 1;
+							break;
+						case SSL_ERROR_SYSCALL:
+							if (neno == EINTR)
+								break;
+							procpass = -1;
+							break;
+						default:
+							procpass = -1;
+						}
+					}
+					else if (nrst > 0)
+					{
+						processedLen += nrst;
+					}
+					else
+						break;
+				}
+				else
+				{
+					nrst = ::recv(m_sockfd, &pbuf[processedLen], size - processedLen, flags);
+					if (nrst < 0)
+					{
+						neno = errno;
+						nrst = -errno;
+					}
+					else if (nrst > 0)
+						processedLen += nrst;
+					else
+						break;
+					
+				}
 			}
 			else
 			{
 				// timeout
 				break;
 			}
-		}while(processedLen < size && ((nrst > 0) || ((nrst < 0) && (errno == EINTR))));
+		}while(processedLen < size && ((nrst > 0) || ((nrst < 0) && (neno == EINTR))));
 		if(nrst <= 0)
 			return nrst;
 		return 1;
@@ -133,7 +227,7 @@ namespace JsServerSocket {
 		int nrst = 1;
 		int processedLen = 0;
 		do {
-			nrst = ::send(m_sockfd, &pbuf[processedLen], size - processedLen, flags);
+			nrst = this->send(&pbuf[processedLen], size - processedLen, flags);
 			if(nrst > 0)
 				processedLen += nrst;
 		}while(processedLen < size && ((nrst > 0) || ((nrst < 0) && (errno == EINTR))));
@@ -151,10 +245,28 @@ namespace JsServerSocket {
 			m_ssl = NULL;
 		}
 #endif
+		::shutdown(m_sockfd, SHUT_RDWR);
 		::closesocket(m_sockfd);
 		m_sockfd = INVALID_SOCKET;
 		m_isUsable = false;
 		return 1;
 	}
+	
+	void ClientContext::setUserPtr(void *userptr)
+	{
+		m_userptr = userptr;
+	}
+	
+	void *ClientContext::getUserPtr()
+	{
+		return m_userptr;
+	}
+	
+#ifdef USE_OPENSSL
+	SSL *ClientContext::getSSL()
+	{
+		return m_ssl;
+	}
+#endif
 
 }

@@ -27,7 +27,8 @@
 namespace JsServerSocket
 {
 
-	ServerContext::ServerContext(JsCPPUtils::Logger *plogger) :
+	ServerContext::ServerContext(void *userptr, JsCPPUtils::Logger *plogger)
+		: m_userptr(userptr),
 		m_pParentLogger(plogger),
 		m_plogger(NULL),
 		m_sock_fd(INVALID_SOCKET),
@@ -172,6 +173,8 @@ namespace JsServerSocket
 
 	int ServerContext::sslLoadCertificates(const char* szCertFile, const char* szKeyFile)
 	{
+		if (m_bUseSSL <= 0)
+			return 0;
 #ifdef USE_OPENSSL
 	    /* set the local certificate from CertFile */
 		if (SSL_CTX_use_certificate_file(m_sslCtx, szCertFile, SSL_FILETYPE_PEM) <= 0)
@@ -402,64 +405,148 @@ namespace JsServerSocket
 					else
 					{
 						pclientctx = (ClientContext*)(epevents[epi].data.ptr);
-						if (pServerCtx->m_bUseSSL)
-						{
-#ifdef USE_OPENSSL
-							recvlen = SSL_read(pclientctx->m_ssl, myctx.precvbuf, pServerCtx->m_conf_recvdatabufsize);
-#else
-							recvlen = -1;
-#endif
-						}
-						else
-						{
-							ecnt = 5;
-							do
-							{
-								recvlen = recv(pclientctx->m_sockfd, myctx.precvbuf, pServerCtx->m_conf_recvdatabufsize, 0);
-								neno = errno;
-								ecnt--;
-							} while ((ecnt > 0) && ((IS_BSDFUNC_ERROR(recvlen)) && (neno == EINTR)));
-						}
+						procrst = 0;
+						
 						if (likely((nrst = pclientctx->lockandcheck()) == 1))
 						{
-							if (recvlen <= 0)
+							int procpass = 0;
+							
+							if ((pServerCtx->m_bUseSSL > 0) && (pclientctx->m_sslstate == 1))
 							{
-								if (recvlen < 0)
-									if(pServerCtx->m_plogger != NULL)
-										pServerCtx->m_plogger->printf(JsCPPUtils::Logger::LOGTYPE_INFO, "[server_workerthreadproc] Client[%d] recvlen=%d, eno=%d", pclientctx->m_index, recvlen, neno);
-								procrst = recvlen;
-							}
-							else
-							{
-								pclientctx->m_last_recvedtime = JsCPPUtils::Common::getTickCount();
-								if(likely(pServerCtx->m_recvhandler != NULL))
-									procrst = pServerCtx->m_recvhandler(pServerCtx, myctx.pthreaduserctx, pclientctx, recvlen, myctx.precvbuf);
-								else
-									procrst = 0;
-								if (procrst <= 0)
+#ifdef USE_OPENSSL
+								ecnt = 5;
+								do
 								{
-									if(pServerCtx->m_plogger != NULL)
-										pServerCtx->m_plogger->printf(JsCPPUtils::Logger::LOGTYPE_INFO, "[server_workerthreadproc] Client[%d] recvproc=%d", pclientctx->m_index, procrst);
-								}else{
-									memset(&tmpepevent, 0, sizeof(tmpepevent));
-									tmpepevent.events = EPOLLIN | EPOLLONESHOT;
-									tmpepevent.data.ptr = pclientctx;
-
-									if (unlikely(epoll_ctl(pServerCtx->m_epoll_fd, EPOLL_CTL_MOD, pclientctx->m_sockfd, &tmpepevent) < 0))
+									int sslerr = 0;
+								
+									nrst = SSL_accept(pclientctx->m_ssl);
+									if (nrst != 1)
 									{
-										// Error
-										neno = -errno;
-										if(pServerCtx->m_plogger != NULL)
-											pServerCtx->m_plogger->printf(JsCPPUtils::Logger::LOGTYPE_ERR, "[server_workerthreadproc] server socket epoll_ctl_mod failed: %d", neno);
-										procrst = neno;
+										neno = errno;
+										sslerr = SSL_get_error(pclientctx->m_ssl, recvlen);
+										switch (sslerr)
+										{
+										case SSL_ERROR_SSL:
+											procpass = -1;
+											break;
+										case SSL_ERROR_WANT_READ:
+										case SSL_ERROR_WANT_WRITE:
+											neno = EAGAIN;
+											procpass = 1;
+											break;
+										case SSL_ERROR_SYSCALL:
+											if (neno == EINTR)
+												break;
+											procpass = -1;
+											break;
+										default:
+											procpass = -1;
+										}
+									}
+									else
+									{
+										pclientctx->m_sslstate = 2;
+										procrst = 1;
+									}
+									ecnt--;
+								} while ((ecnt > 0) && (nrst != 1) && (procpass == 0));
+#endif
+							} else {
+								ecnt = 5;
+								do
+								{
+									if (pServerCtx->m_bUseSSL)
+									{
+										int sslerr = 0;
+#ifdef USE_OPENSSL
+										recvlen = SSL_read(pclientctx->m_ssl, myctx.precvbuf, pServerCtx->m_conf_recvdatabufsize);
+										if (recvlen < 0)
+										{
+											neno = errno;
+											sslerr = SSL_get_error(pclientctx->m_ssl, recvlen);
+											switch (sslerr)
+											{
+											case SSL_ERROR_SSL:
+												ERR_print_errors_fp(stderr);
+												procpass = -1;
+												break;
+											case SSL_ERROR_WANT_READ:
+											case SSL_ERROR_WANT_WRITE:
+												neno = EAGAIN;
+												procpass = 1;
+												break;
+											case SSL_ERROR_SYSCALL:
+												if (neno == EINTR)
+													break;
+												procpass = -1;
+												break;
+											default:
+												procpass = -1;
+											}
+										}
+#else
+										recvlen = -1;
+										break;
+#endif
+									} else {
+										recvlen = recv(pclientctx->m_sockfd, myctx.precvbuf, pServerCtx->m_conf_recvdatabufsize, 0);
+										if (IS_BSDFUNC_ERROR(recvlen))
+										{
+											neno = errno;
+											switch (neno)
+											{
+											case EINTR:
+												break;
+											case EAGAIN:
+												procpass = 1;
+												break;
+											default:
+												procpass = -1;
+											}
+										}
+									}
+									ecnt--;
+								} while ((ecnt > 0) && (recvlen < 0) && (procpass == 0));
+								
+								if (procpass == 0)
+								{
+									if (recvlen <= 0)
+									{
+										if (recvlen < 0)
+											if (pServerCtx->m_plogger != NULL)
+												pServerCtx->m_plogger->printf(JsCPPUtils::Logger::LOGTYPE_INFO, "[server_workerthreadproc] Client[%d] recvlen=%d, eno=%d", pclientctx->m_index, recvlen, neno);
+										procrst = recvlen;
+									} else {
+										pclientctx->m_last_recvedtime = JsCPPUtils::Common::getTickCount();
+										if (likely(pServerCtx->m_recvhandler != NULL))
+											procrst = pServerCtx->m_recvhandler(pServerCtx, myctx.pthreaduserctx, pclientctx, recvlen, myctx.precvbuf);
+										else
+											procrst = 1;
+										if (procrst < 0)
+											if (pServerCtx->m_plogger != NULL)
+												pServerCtx->m_plogger->printf(JsCPPUtils::Logger::LOGTYPE_INFO, "[server_workerthreadproc] Client[%d] recvproc=%d", pclientctx->m_index, procrst);
 									}
 								}
 							}
-							if (procrst <= 0)
+								
+							if ((procpass == 1) || (procrst >= 1))
 							{
-								pServerCtx->clientDel(pclientctx);
-							}else{
+								memset(&tmpepevent, 0, sizeof(tmpepevent));
+								tmpepevent.events = EPOLLIN | EPOLLONESHOT;
+								tmpepevent.data.ptr = pclientctx;
+
+								if (unlikely(epoll_ctl(pServerCtx->m_epoll_fd, EPOLL_CTL_MOD, pclientctx->m_sockfd, &tmpepevent) < 0))
+								{
+									// Error
+									neno = -errno;
+									if (pServerCtx->m_plogger != NULL)
+										pServerCtx->m_plogger->printf(JsCPPUtils::Logger::LOGTYPE_ERR, "[server_workerthreadproc] server socket epoll_ctl_mod failed: %d", neno);
+									procrst = neno;
+								}
+								
 								pclientctx->unlock();
+							} else {
+								pServerCtx->clientDel(pclientctx);
 							}
 						}
 					}
@@ -488,10 +575,27 @@ namespace JsServerSocket
 	{
 		return m_bUseSSL;
 	}
+	
+#ifdef USE_OPENSSL
+	SSL_CTX *ServerContext::getSSLCtx()
+	{
+		return m_sslCtx;
+	}
+#endif
 
 	JsCPPUtils::Logger *ServerContext::getLogger()
 	{
 		return m_pParentLogger;
+	}
+	
+	void ServerContext::setUserPtr(void *userptr)
+	{
+		m_userptr = userptr;
+	}
+	
+	void *ServerContext::getUserPtr()
+	{
+		return m_userptr;
 	}
 
 	int ServerContext::clientAdd(int clientsock, struct sockaddr_in *client_paddr, JsCPPUtils::SmartPointer< ClientContext > *pout_spclientctx, void *userptr)
@@ -579,13 +683,16 @@ namespace JsServerSocket
 					clientidx = clientidx % powval;
 					powval *= 10;
 				}
-				iter = m_clients.find(clientidx);
-				if(unlikely(iter != m_clients.end()))
+				if (clientidx > 0)
 				{
-					clientidx = -1;
-					failcnt++;
+					iter = m_clients.find(clientidx);
+					if(unlikely(iter != m_clients.end()))
+					{
+						clientidx = -1;
+						failcnt++;
+					}
 				}
-			}while(clientidx == -1 && failcnt < 128);
+			}while(clientidx <= 0 && failcnt < 128);
 			m_random_lock.unlock();
 			if(unlikely(failcnt < 128))
 			{
@@ -609,6 +716,7 @@ namespace JsServerSocket
 #ifdef USE_OPENSSL
 			if (m_bUseSSL)
 			{
+				int sslerr;
 				spclientctx->m_ssl = SSL_new(m_sslCtx);
 				if (unlikely(spclientctx->m_ssl == NULL))
 				{
@@ -619,11 +727,43 @@ namespace JsServerSocket
 				else
 				{
 					SSL_set_fd(spclientctx->m_ssl, clientsock);
-					if ((nrst = SSL_accept(spclientctx->m_ssl)) <= 0)
+					if ((nrst = SSL_accept(spclientctx->m_ssl)) != 1)
 					{
-						ERR_print_errors_fp(stderr);
-						retval = -1000;
-						break;
+						int procpass = 0;
+						neno = errno;
+						sslerr = SSL_get_error(spclientctx->m_ssl, nrst);
+						
+						switch (sslerr)
+						{
+						case SSL_ERROR_SSL:
+							procpass = -1;
+							break;
+						case SSL_ERROR_WANT_READ:
+						case SSL_ERROR_WANT_WRITE:
+							neno = EAGAIN;
+							procpass = 1;
+							break;
+						case SSL_ERROR_SYSCALL:
+							if (neno == EINTR)
+								break;
+							procpass = -1;
+							break;
+						default:
+							procpass = -1;
+						}
+						
+						if (m_plogger != NULL)
+							m_plogger->printf(JsCPPUtils::Logger::LOGTYPE_ERR, "[clientAdd] client SSL Accept failed: %d/%d / retry:%d", sslerr, neno, procpass);
+						
+						if (procpass != 1)
+						{
+							retval = -1000;
+							break;
+						}
+						
+						spclientctx->m_sslstate = 1;
+					}else{
+						spclientctx->m_sslstate = 2;
 					}
 				}
 			}
